@@ -5,6 +5,7 @@ const { Webhook, MessageBuilder } = require('discord-webhook-node');
 const utils = require('../js/utils.js');
 
 const router = express.Router();
+
 const dbPath = "./sqlitedb/dev-users.db";
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
