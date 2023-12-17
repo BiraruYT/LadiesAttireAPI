@@ -19,7 +19,7 @@ router.get('/services/user-to-id/:username', function(req, res) {
 
     const query = 'SELECT id FROM users WHERE username = ?';
 
-    db.get(query, [username], (err, user) => {
+    db.prepare(query, [username], (err, user) => {
         if (err) {
             console.error(err.message);
             return res.status(500).json({
@@ -39,7 +39,7 @@ router.get('/services/user-to-id/:username', function(req, res) {
             message: 'User ID found.',
             userId: user.id
         });
-    });
+    }).run();
 });
 
 module.exports = router;
