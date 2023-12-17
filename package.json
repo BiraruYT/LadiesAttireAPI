@@ -1,12 +1,29 @@
 {
   "name": "ladiesattireapi",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "API For Ladies Attire",
+  "keywords": [
+    "Ladies Attire",
+    "Ladies Attire API",
+    "API"
+  ],
+  "author": "CheapPlayz",
+  "license": "GPL-3.0",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "discord-webhook-node": "^1.1.8",
+    "express": "^4.18.2",
+    "express-ip": "^1.0.4",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "sqlite3": "^5.1.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
 }
