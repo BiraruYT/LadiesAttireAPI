@@ -1,7 +1,6 @@
 const express = require('express');
 const expressip = require('express-ip');
 const helmet = require('helmet');
-const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -47,7 +46,6 @@ db.pragma('journal_mode = WAL');
 db.close();
 
 app.use(helmet());
-app.use(csrf());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(expressip().getIpInfoMiddleware);
