@@ -2,7 +2,7 @@ const express = require('express');
 const expressip = require('express-ip');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const http = require('http');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -23,7 +23,7 @@ const limiter = rateLimit({
     max: 100, // 100 requests per windowMs minutes
     message: 'Too many requests from this IP, please try again later.',
 });
-const req = http.request(options, (res) => {
+const req = https.request(options, (res) => {
     if (res.statusCode === 200) {
         console.log('Connected to the internet.');
     }
