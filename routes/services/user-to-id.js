@@ -6,6 +6,16 @@ const router = express.Router();
 const dbPath = "./sqlitedb/dev-users.db";
 const db = new SQLITE3(dbPath, { verbose: console.log });
 
+router.get('/services/user-to-id', function(req, res) {
+    return res.status(400).json({
+        message: "Nothing exists here so get out before everything collapses! But if your looking for some services, you can find them here:",
+        services: [
+            "services/user-to-id:username"
+        ],
+        error: "NOTHING-EXISTS-HERE"
+    });
+});
+
 router.get('/services/user-to-id/:username', function(req, res) {
     const username = req.params.username;
 
