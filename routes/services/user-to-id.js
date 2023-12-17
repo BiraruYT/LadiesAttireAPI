@@ -29,7 +29,7 @@ router.get('/services/user-to-id/:username', function(req, res) {
         }
 
         if (!user) {
-            return res.status(404).json({
+            return res.status(400).json({
                 message: 'User not found.',
                 error: 'USER-NOT-FOUND'
             });
