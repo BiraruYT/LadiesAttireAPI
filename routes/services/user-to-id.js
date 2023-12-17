@@ -17,7 +17,7 @@ router.get('/services/user-to-id', function(req, res) {
 });
 
 router.get('/services/user-to-id/:username', function(req, res) {
-    const username = req.params.username;
+    const username = req.params;
 
     if (!username) {
         return res.status(400).json({
@@ -28,7 +28,7 @@ router.get('/services/user-to-id/:username', function(req, res) {
 
     const query = 'SELECT id FROM users WHERE username = ?';
 
-    db.prepare(query, [username], (err, user) => {
+    db.prepare(query, (err, user) => {
         if (err) {
             console.error(err.message);
             return res.status(500).json({
@@ -48,7 +48,7 @@ router.get('/services/user-to-id/:username', function(req, res) {
             message: 'User ID found.',
             userId: user.id
         });
-    }).run();
+    });
 });
 
 module.exports = router;
