@@ -1,6 +1,7 @@
 const express = require('express');
 const expressip = require('express-ip');
 const helmet = require('helmet');
+const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const https = require('https');
 
@@ -35,6 +36,7 @@ req.on('error', (error) => {
 
 
 app.use(helmet());
+app.use(cors());
 app.use(limiter);
 app.use(express.json());
 app.use(expressip().getIpInfoMiddleware);
