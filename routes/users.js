@@ -1,19 +1,13 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const sqlite3 = require('sqlite3');
+const SQLITE3 = require('better-sqlite3');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
-const utils = require('js/utils');
+const utils = require('../js/utils');
 
 const router = express.Router();
 
 const dbPath = "./sqlitedb/dev-users.db";
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error(err.message + ", On module Users.");
-    } else {
-        console.log('Connected to the SQLite database on module Users.');
-    }
-});
+const db = new SQLITE3(dbPath, { verbose: console.log });
 
 const WEBHOOK_IMAGE_URL = 'https://cdn.discordapp.com/attachments/1185844013119590402/1185848513377079317/Ladies_Attire.png?ex=65911a7d&is=657ea57d&hm=f2bbc56b0fbe985928c61d917f72a2ca9a7507872598a64ddb8b93a197718cbf&';
 const usersGetWebhook = new Webhook("https://discord.com/api/webhooks/1185845660273090640/ak4x7X9um1cX6KvDchNMQjmSmQ_eu2dW-VMrjlEK9m6zYlMUpNYQPV5I4Yzod4f161wH");
@@ -21,14 +15,14 @@ const usersPostWebhook = new Webhook("https://discord.com/api/webhooks/118584600
 const usersIdGetWebhook = new Webhook("https://discord.com/api/webhooks/1185846170212372570/wVH5kD4mOmvEHZCiCo58oJmPf7Njeoo4asJ01jZqVbMnaVNVvYqR8dgKeyab9p-PhPaB");
 const usersIdPostWebhook = new Webhook("https://discord.com/api/webhooks/1185871628870111332/QLL6qJPLOul2J3OCBrr2iuMA_sVFLoXpQjpOjKddO-Z6GewKy0wZK5CKkn6wim5sXx-q");
 
-db.run(`
+db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT,
     password TEXT,
     email TEXT
   )
-`);
+`).run();
 
 /*
 db.run(`
@@ -83,7 +77,7 @@ router.get('/users', async (req, res) => {
     }
 });
 
-router.post('/users', async(req, res) => {
+router.post('/users', async (req, res) => {
     const { body } = req;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const userIp = req.ipInfo.ip;
@@ -153,405 +147,306 @@ router.post('/users', async(req, res) => {
         email: body.email
     };
 
-    db.get('SELECT id FROM users WHERE username = ? OR email = ?', [newUser.username, newUser.email], (err, existingUser) => {
-        if (err) {
-            try {
-                usersPostWebhook.send(new MessageBuilder()
-                    .setTitle(`Error Code: ${err.message}`)
-                    .setColor('#FA00FF')
-                    .setDescription(`
-                        Users IP: ${userIp}
-                        User Agent: ${userAgent}
-                        Forwarded For: ${forwardedFor}
-                        Language: ${language}
-                    `))
-
-                console.error(`Error Loading SQL: ${err.message}`);
-                return res.status(500).json({
-                    message: 'Internal Server Error',
-                    error: err.message
-                });
-            } catch (error) {
-                console.error('Error sending message to Discord:', error.message);
-                return res.status(500).json({ error: 'Internal Server Error' });
-            }
-        }
+    try {
+        const existingUser = db.prepare('SELECT id FROM users WHERE username = ? OR email = ?').get(newUser.username, newUser.email);
 
         if (existingUser) {
-            try {
-                usersPostWebhook.send(new MessageBuilder()
-                    .setTitle(`Existing User: ${existingUser.id}`)
-                    .setColor('#FA00FF')
-                    .setDescription(`
-                        Users IP: ${userIp}
-                        User Agent: ${userAgent}
-                        Forwarded For: ${forwardedFor}
-                        Language: ${language}
-                    `))
-
-                return res.status(400).json({
-                    message: 'User with the same username or email already exists.',
-                    error: 'USER-ALREADY-EXISTS',
-                    existingUserId: existingUser.id
-                });
-            } catch (error) {
-                console.error('Error sending message to Discord:', error.message);
-                return res.status(500).json({ error: 'Internal Server Error' });
-            }
-        } else {
-            db.run('INSERT INTO users (username, password, email) VALUES (?, ?, ?)', [newUser.username, newUser.password, newUser.email], function (err) {
-                if (err) {
-                    try {
-                        usersPostWebhook.send(new MessageBuilder()
-                            .setTitle(`Error Code: ${err.message}`)
-                            .setColor('#FA00FF')
-                            .setDescription(`
-                                Users IP: ${userIp}
-                                User Agent: ${userAgent}
-                                Forwarded For: ${forwardedFor}
-                                Language: ${language}
-                            `))
-
-                        console.error(`Error executing SQL: ${this.error}`);
-                        console.error(`Error executing SQL: ${err.message}`);
-                        res.status(500).json({
-                            message: 'Internal Server Error',
-                            error: err.message
-                        });
-                    } catch (error) {
-                        console.error('Error sending message to Discord:', error.message);
-                    }
-                    return;
-                }
-                try {
-                    usersPostWebhook.send(new MessageBuilder()
-                        .setTitle(`User Created: ${this.lastID}`)
-                        .setColor('#FA00FF')
-                        .setDescription(`
-                            Users IP: ${userIp}
-                            User Agent: ${userAgent}
-                            Forwarded For: ${forwardedFor}
-                            Language: ${language}
-                        `))
-
-                    console.log(`A new user has been added with ID ${this.lastID}`);
-                    return res.status(200).json({
-                        message: 'User successfully added.',
-                        newUser: {
-                            id: this.lastID,
-                            username: newUser.username,
-                            email: newUser.email
-                        }
-                    });
-                } catch (error) {
-                    console.error('Error sending message to Discord:', error.message);
-                    return res.status(500).json({ error: 'Internal Server Error' });
-                }
-            });
-        }
-    });
-});
-
-router.get('/users/:id', (req, res) => {
-    const { id } = req.params;
-    const { body } = req;
-    const userIp = req.ipInfo.ip;
-    const userAgent = req.headers['user-agent'];
-    const forwardedFor = req.headers['x-forwarded-for'];
-    const language = req.headers['accept-language'];
-
-    if (!id) {
-        return res.status(400).json({
-            message: "No user's id? Please specify!",
-            error: "NO-USER-ID"
-        });
-    }
-    else if (!body) {
-        return res.status(400).json({
-            message: "No user's info? Please specify!",
-            error: "NO-USER-INFO"
-        });
-    }
-
-    const parsedId = parseInt(id);
-    const isInt = utils.isInt(parsedId);
-
-    if (!isInt) {
-        return res.status(400).json({
-            message: "User's id isn't a number! Please specify an integer.",
-            error: "USER-ID-NOT-INT"
-        });
-    }
-
-    db.get('SELECT id, username, email, password FROM users WHERE id = ?', [parsedId], async (err, user) => {
-        if (err) {
-            try {
-                await usersIdGetWebhook.send(new MessageBuilder()
-                    .setTitle(`Error Code: ${err.message}`)
-                    .setColor('#FA00FF')
-                    .setDescription(`
-                        Users IP: ${userIp}
-                        User Agent: ${userAgent}
-                        Forwarded For: ${forwardedFor}
-                        Language: ${language}
-                    `))
-
-                console.error(err.message);
-                return res.status(500).json({
-                    message: 'Internal Server Error',
-                    error: err.message
-                });
-            } catch (error) {
-                console.error('Error sending message to Discord:', error.message);
-            }
-        }
-
-        if (!user) {
-            return res.status(400).json({
-                message: `User with ID ${parsedId} not found.`,
-                error: "USER-NOT-FOUND"
-            });
-        } else {
-            const isPasswordHashed = user.password.startsWith('$2b$');
-
-            if (isPasswordHashed) {
-                const isPasswordMatch = await bcrypt.compare(body.password, user.password);
-
-                if (isPasswordMatch) {
-                    try {
-                        await usersIdGetWebhook.send(new MessageBuilder()
-                            .setTitle(`Sent User: ${user.id}`)
-                            .setColor('#FA00FF')
-                            .setDescription(`
-                                Users IP: ${userIp}
-                                User Agent: ${userAgent}
-                                Forwarded For: ${forwardedFor}
-                                Language: ${language}
-                            `))
-
-                        return res.status(200).json({
-                            message: 'User successfully found.',
-                            user: {
-                                id: user.id,
-                                username: user.username,
-                                email: user.email
-                            }
-                        });
-                    } catch (error) {
-                        console.error('Error sending message to Discord:', error.message);
-                    }
-                } else {
-                    try {
-                        await usersIdGetWebhook.send(new MessageBuilder()
-                            .setTitle(`Sent User: ${user.id}`)
-                            .setColor('#FA00FF')
-                            .setDescription(`
-                                Users IP: ${userIp}
-                                User Agent: ${userAgent}
-                                Forwarded For: ${forwardedFor}
-                                Language: ${language}
-                            `))
-
-                        return res.status(200).json({
-                            message: 'User successfully found.',
-                            user: {
-                                id: user.id,
-                                username: user.username
-                            }
-                        });
-                    } catch (error) {
-                        console.error('Error sending message to Discord:', error.message);
-                    }
-                }
-            } else {
-                if (body.password === user.password) {
-                    try {
-                        await usersIdGetWebhook.send(new MessageBuilder()
-                            .setTitle(`Sent User: ${user.id}`)
-                            .setColor('#FA00FF')
-                            .setDescription(`
-                                Users IP: ${userIp}
-                                User Agent: ${userAgent}
-                                Forwarded For: ${forwardedFor}
-                                Language: ${language}
-                            `))
-
-                        return res.status(200).json({
-                            message: 'User successfully found.',
-                            user: {
-                                id: user.id,
-                                username: user.username,
-                                email: user.email
-                            }
-                        });
-                    } catch (error) {
-                        console.error('Error sending message to Discord:', error.message);
-                    }
-                } else {
-                    try {
-                        await usersIdGetWebhook.send(new MessageBuilder()
-                            .setTitle(`Sent User: ${user.id}`)
-                            .setColor('#FA00FF')
-                            .setDescription(`
-                                Users IP: ${userIp}
-                                User Agent: ${userAgent}
-                                Forwarded For: ${forwardedFor}
-                                Language: ${language}
-                            `))
-
-                        return res.status(200).json({
-                            message: 'User successfully found.',
-                            user: {
-                                id: user.id,
-                                username: user.username
-                            }
-                        });
-                    } catch (error) {
-                        console.error('Error sending message to Discord:', error.message);
-                    }
-                }
-            }
-        }
-    });
-});
-
-router.post('/users/:id', async(req, res) => {
-    const { id } = req.params;
-    const { body } = req;
-    const userIp = req.ipInfo.ip;
-    const userAgent = req.headers['user-agent'];
-    const forwardedFor = req.headers['x-forwarded-for'];
-    const language = req.headers['accept-language'];
-
-    if (!id) {
-        return res.json({
-            message: "No user's id? Please specify!",
-            error: "NO-USER-ID"
-        });
-    } else if (!body) {
-        return res.json({
-            message: "No user's info? Please specify!",
-            error: "NO-USER-INFO"
-        });
-    }
-
-    const parsedId = parseInt(id);
-    const isInt = utils.isInt(parsedId);
-
-    if (!isInt) {
-        return res.json({
-            message: "User's id isn't a number! Please specify an integer.",
-            error: "USER-ID-NOT-INT"
-        });
-    }
-
-    if (!body.username && !body.password && !body.email) {
-        return res.json({
-            message: "No fields provided for update. Please specify at least one field (username, password, email).",
-            error: "NO-FIELDS-FOR-UPDATE"
-        });
-    }
-
-    if (body.password) {
-        const hashedPassword = await bcrypt.hash(body.password, 10);
-        body.password = hashedPassword;
-    }
-
-    const storedPassword = db.get('SELECT password FROM users WHERE id = ?', [parsedId], async (err, user) => {
-        if (err) {
-            try {
-                await usersIdPostWebhook.send(new MessageBuilder()
-                    .setTitle(`Error Code: ${err.message}`)
-                    .setColor('#FA00FF')
-                    .setDescription(`
-                        Users IP: ${userIp}
-                        User Agent: ${userAgent}
-                        Forwarded For: ${forwardedFor}
-                        Language: ${language}
-                    `))
-
-                console.error(err.message);
-                return res.status(500).json({
-                    message: 'Internal Server Error',
-                    error: err.message
-                });
-            } catch (error) {
-                console.error('Error sending message to Discord:', error.message);
-            }
-        }
-        return user.password;
-    });
-
-    if (body.password !== storedPassword) {
-        return res.status(400).json({
-            message: "Password doesn't match the stored password.",
-            error: "PASSWORD-MISMATCH"
-        });
-    }
-
-    const updateFields = [];
-    const values = [];
-
-
-    if (body.username) {
-        updateFields.push('username = ?');
-        values.push(body.username);
-    }
-    if (body.password) {
-        updateFields.push('password = ?');
-        values.push(body.password);
-    }
-    if (body.email) {
-        updateFields.push('email = ?');
-        values.push(body.email);
-    }
-
-    db.run(`UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`, [...values, parsedId], async function (err) {
-        if (err) {
-            try {
-                await usersIdPostWebhook.send(new MessageBuilder()
-                    .setTitle(`Error Code: ${err.message}`)
-                    .setColor('#FA00FF')
-                    .setDescription(`
-                        Users IP: ${userIp}
-                        User Agent: ${userAgent}
-                        Forwarded For: ${forwardedFor}
-                        Language: ${language}
-                    `))
-
-                console.error(`Error executing SQL: ${this.error}`);
-                console.error(`Error executing SQL: ${err.message}`);
-                return res.status(500).json({
-                    message: 'Internal Server Error',
-                    error: err.message
-                });
-            } catch (error) {
-                console.error('Error sending message to Discord:', error.message);
-            }
-        }
-        try {
-            await usersIdPostWebhook.send(new MessageBuilder()
-                .setTitle(`User Updated: ${err.message}`)
+            await usersPostWebhook.send(new MessageBuilder()
+                .setTitle(`Existing User: ${existingUser.id}`)
                 .setColor('#FA00FF')
                 .setDescription(`
                     Users IP: ${userIp}
                     User Agent: ${userAgent}
                     Forwarded For: ${forwardedFor}
                     Language: ${language}
-                `))
+                `));
 
-            console.log(`User with ID ${parsedId} has been updated.`);
+            return res.status(400).json({
+                message: 'User with the same username or email already exists.',
+                error: 'USER-ALREADY-EXISTS',
+                existingUserId: existingUser.id
+            });
+        }
+
+        const { lastInsertRowid } = db.prepare('INSERT INTO users (username, password, email) VALUES (?, ?, ?)').run(newUser.username, newUser.password, newUser.email);
+
+        await usersPostWebhook.send(new MessageBuilder()
+            .setTitle(`User Created: ${lastInsertRowid}`)
+            .setColor('#FA00FF')
+            .setDescription(`
+                Users IP: ${userIp}
+                User Agent: ${userAgent}
+                Forwarded For: ${forwardedFor}
+                Language: ${language}
+            `));
+
+        console.log(`A new user has been added with ID ${lastInsertRowid}`);
+        return res.status(200).json({
+            message: 'User successfully added.',
+            newUser: {
+                id: lastInsertRowid,
+                username: newUser.username,
+                email: newUser.email
+            }
+        });
+    } catch (error) {
+        await usersPostWebhook.send(new MessageBuilder()
+            .setTitle(`Error Code: ${error.message}`)
+            .setColor('#FA00FF')
+            .setDescription(`
+                Users IP: ${userIp}
+                User Agent: ${userAgent}
+                Forwarded For: ${forwardedFor}
+                Language: ${language}
+            `));
+
+        console.error(`Error executing SQL: ${error.message}`);
+        return res.status(500).json({
+            message: 'Internal Server Error',
+            error: error.message
+        });
+    }
+});
+
+router.get('/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const userIp = req.ipInfo.ip;
+    const userAgent = req.headers['user-agent'];
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const language = req.headers['accept-language'];
+
+    if (!id) {
+        return res.status(400).json({
+            message: "No user's id? Please specify!",
+            error: "NO-USER-ID"
+        });
+    }
+
+    const parsedId = parseInt(id);
+    const isInt = utils.isInt(parsedId);
+
+    if (!isInt) {
+        return res.status(400).json({
+            message: "User's id isn't a number! Please specify an integer.",
+            error: "USER-ID-NOT-INT"
+        });
+    }
+
+    try {
+        const user = db.prepare('SELECT id, username, email, password FROM users WHERE id = ?').get(parsedId);
+
+        if (!user) {
+            return res.status(404).json({
+                message: `User with ID ${parsedId} not found.`,
+                error: "USER-NOT-FOUND"
+            });
+        }
+
+        if (!utils.isInt(parsedId)) {
+            return res.status(400).json({
+                message: "User's id isn't a number! Please specify an integer.",
+                error: "USER-ID-NOT-INT"
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(req.query.password, 10);
+
+        if (hashedPassword === user.password) {
+            await usersIdGetWebhook.send(new MessageBuilder()
+                .setTitle(`Sent User: ${user.id}`)
+                .setColor('#FA00FF')
+                .setDescription(`
+                    Users IP: ${userIp}
+                    User Agent: ${userAgent}
+                    Forwarded For: ${forwardedFor}
+                    Language: ${language}
+                `));
+
             return res.status(200).json({
-                message: 'User successfully updated.',
-                updatedUser: {
-                    id: parsedId,
-                    username: body.username
+                message: 'User successfully found.',
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email
                 }
+            });
+        } else {
+            await usersIdGetWebhook.send(new MessageBuilder()
+                .setTitle(`Sent User: ${user.id}`)
+                .setColor('#FA00FF')
+                .setDescription(`
+                    Users IP: ${userIp}
+                    User Agent: ${userAgent}
+                    Forwarded For: ${forwardedFor}
+                    Language: ${language}
+                `));
+
+            return res.status(401).json({
+                message: 'Invalid password.',
+                error: "INVALID-PASSWORD"
+            });
+        }
+    } catch (err) {
+        await usersIdGetWebhook.send(new MessageBuilder()
+            .setTitle(`Error Code: ${err.message}`)
+            .setColor('#FA00FF')
+            .setDescription(`
+                Users IP: ${userIp}
+                User Agent: ${userAgent}
+                Forwarded For: ${forwardedFor}
+                Language: ${language}
+            `));
+
+        console.error(err.message);
+        return res.status(500).json({
+            message: 'Internal Server Error',
+            error: err.message
+        });
+    }
+});
+
+router.post('/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const { body } = req;
+    const userIp = req.ipInfo.ip;
+    const userAgent = req.headers['user-agent'];
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const language = req.headers['accept-language'];
+
+    if (!id) {
+        return res.status(400).json({
+            message: "No user's id? Please specify!",
+            error: "NO-USER-ID"
+        });
+    } else if (!body) {
+        return res.status(400).json({
+            message: "No user's info? Please specify!",
+            error: "NO-USER-INFO"
+        });
+    }
+
+    const parsedId = parseInt(id);
+    const isInt = utils.isInt(parsedId);
+
+    if (!isInt) {
+        return res.status(400).json({
+            message: "User's id isn't a number! Please specify an integer.",
+            error: "USER-ID-NOT-INT"
+        });
+    }
+
+    if (!body.username && !body.password && !body.email) {
+        return res.status(400).json({
+            message: "No fields provided for update. Please specify at least one field (username, password, email).",
+            error: "NO-FIELDS-FOR-UPDATE"
+        });
+    }
+
+    try {
+        const user = db.prepare('SELECT password FROM users WHERE id = ?').get(parsedId);
+
+        if (!user) {
+            return res.status(404).json({
+                message: `User with ID ${parsedId} not found.`,
+                error: "USER-NOT-FOUND"
+            });
+        }
+
+        const isPasswordMatch = await bcrypt.compare(body.password, user.password);
+
+        if (!isPasswordMatch) {
+            return res.status(400).json({
+                message: "Password doesn't match the stored password.",
+                error: "PASSWORD-MISMATCH"
+            });
+        }
+
+        const updateFields = [];
+        const values = [];
+
+        if (body.username) {
+            updateFields.push('username = ?');
+            values.push(body.username);
+        }
+        if (body.password) {
+            const hashedPassword = await bcrypt.hash(body.password, 10);
+            updateFields.push('password = ?');
+            values.push(hashedPassword);
+        }
+        if (body.email) {
+            updateFields.push('email = ?');
+            values.push(body.email);
+        }
+
+        db.prepare(`UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`, [...values, parsedId], async function (err) {
+            if (err) {
+                try {
+                    await usersIdPostWebhook.send(new MessageBuilder()
+                        .setTitle(`Error Code: ${err.message}`)
+                        .setColor('#FA00FF')
+                        .setDescription(`
+                            Users IP: ${userIp}
+                            User Agent: ${userAgent}
+                            Forwarded For: ${forwardedFor}
+                            Language: ${language}
+                        `));
+
+                    console.error(`Error executing SQL: ${err.message}`);
+                    return res.status(500).json({
+                        message: 'Internal Server Error',
+                        error: err.message
+                    });
+                } catch (error) {
+                    console.error('Error sending message to Discord:', error.message);
+                }
+            }
+
+            try {
+                await usersIdPostWebhook.send(new MessageBuilder()
+                    .setTitle(`User Updated: ${parsedId}`)
+                    .setColor('#FA00FF')
+                    .setDescription(`
+                        Users IP: ${userIp}
+                        User Agent: ${userAgent}
+                        Forwarded For: ${forwardedFor}
+                        Language: ${language}
+                    `));
+
+                console.log(`User with ID ${parsedId} has been updated.`);
+                return res.status(200).json({
+                    message: 'User successfully updated.',
+                    updatedUser: {
+                        id: parsedId,
+                        username: body.username
+                    }
+                });
+            } catch (error) {
+                console.error('Error sending message to Discord:', error.message);
+                return res.status(500).json({ error: 'Internal Server Error' });
+            }
+        }).run();
+    } catch (err) {
+        try {
+            await usersIdPostWebhook.send(new MessageBuilder()
+                .setTitle(`Error Code: ${err.message}`)
+                .setColor('#FA00FF')
+                .setDescription(`
+                    Users IP: ${userIp}
+                    User Agent: ${userAgent}
+                    Forwarded For: ${forwardedFor}
+                    Language: ${language}
+                `));
+
+            console.error(err.message);
+            return res.status(500).json({
+                message: 'Internal Server Error',
+                error: err.message
             });
         } catch (error) {
             console.error('Error sending message to Discord:', error.message);
+            return res.status(500).json({ error: 'Internal Server Error' });
         }
-    });
+    }
 });
 
 module.exports = router;

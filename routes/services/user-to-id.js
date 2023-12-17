@@ -1,17 +1,11 @@
 const express = require('express');
-const sqlite3 = require('sqlite3');
-const utils = require('js/utils');
+const SQLITE3 = require('better-sqlite3');
+const utils = require('../../js/utils');
 
 const router = express.Router();
 
 const dbPath = "./sqlitedb/dev-users.db";
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error(err.message + ", On module Users.");
-    } else {
-        console.log('Connected to the SQLite database on module User-To-ID.');
-    }
-});
+const db = new SQLITE3(dbPath, { verbose: console.log });
 
 router.get('/services/user-to-id/:username', function(req, res) {
     const username = req.params.username;

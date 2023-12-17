@@ -6,15 +6,21 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const https = require('https');
+const http = require('http');
+const SQLITE3 = require('better-sqlite3');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+
+const  keys = require('./js/keys.js');
 
 const index = require('./routes/index.js');
 const users = require('./routes/users.js');
 const services = require('./routes/services.js');
 const usertoid = require('./routes/services/user-to-id.js');
+
+const dbPath = "./sqlitedb/dev-users.db";
+const db = new SQLITE3(dbPath, { verbose: console.log });
 
 const options = {
     hostname: 'www.google.com',
@@ -27,7 +33,7 @@ const limiter = rateLimit({
     max: 100, // 100 requests per windowMs minutes
     message: 'Too many requests from this IP, please try again later.',
 });
-const req = https.request(options, (res) => {
+const req = http.request(options, (res) => {
     if (res.statusCode === 200) {
         console.log('Connected to the internet.');
     }
@@ -37,14 +43,17 @@ req.on('error', (error) => {
     console.error(`Error connecting to the internet: ${error.message}`);
 });
 
+db.pragma('journal_mode = WAL');
+db.close();
+
 app.use(helmet());
-app.use(cors());
-app.use(limiter);
-app.use(cookieParser());
+app.use(csrf());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(expressip().getIpInfoMiddleware);
-app.use(csrf());
+app.use(limiter);
+app.use(cors());
+app.use(cookieParser(keys.keys.cookieparser));
 
 app.use(
     helmet.contentSecurityPolicy({
@@ -56,20 +65,6 @@ app.use(
       },
     })
 );
-app.use((req, res, next) => {
-    res.setHeader('X-CSRF-Token', req.csrfToken());
-    next();
-});
-
-app.use((err, req, res, next) => {
-    if (err.code === 'EBADCSRFTOKEN') {
-        return res.status(403).json({
-            message: 'CSRF token validation failed.',
-            error: 'CSRF-TOKEN-INVALID'
-        });
-    }
-    next(err);
-});
 
 app.get('/', index);
 app.get('/users', users);
