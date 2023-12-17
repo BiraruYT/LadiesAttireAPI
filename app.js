@@ -9,6 +9,8 @@ const PORT = process.env.PORT || 8080;
 
 const index = require('./routes/index.js');
 const users = require('./routes/users.js');
+const services = require('./routes/services.js');
+const usertoid = require('./routes/services/user-to-id.js');
 
 const options = {
     hostname: 'www.google.com',
@@ -51,9 +53,13 @@ app.use(
 
 app.get('/', index);
 app.get('/users', users);
+app.get('/services', services);
 app.get('/users/:id', users);
+app.get('/services/user-to-id:id', usertoid);
+
 
 app.post('/users', users);
+app.post('/users/:id', users);
 
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
