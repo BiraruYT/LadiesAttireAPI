@@ -1,5 +1,4 @@
 const express = require('express');
-const expressip = require('express-ip');
 const bcrypt = require('bcrypt');
 const sqlite3 = require('sqlite3').verbose();
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
