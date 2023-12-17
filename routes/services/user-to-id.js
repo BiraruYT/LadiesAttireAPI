@@ -1,6 +1,6 @@
 const express = require('express');
 const sqlite3 = require('sqlite3');
-const utils = require('../js/utils.js');
+const utils = require('js/utils');
 
 const router = express.Router();
 

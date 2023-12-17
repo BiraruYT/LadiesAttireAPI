@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const sqlite3 = require('sqlite3');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
-const utils = require('../js/utils.js');
+const utils = require('js/utils');
 
 const router = express.Router();
 
