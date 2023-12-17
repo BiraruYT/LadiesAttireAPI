@@ -41,6 +41,7 @@ app.use(
 app.get('/', index);
 app.get('/users', users);
 app.get('/services', services);
+app.get('/services/user-to-id', usertoid);
 app.get('/users/:id', rateLimit, users);
 app.get('/services/user-to-id:id', rateLimit, usertoid);
 
