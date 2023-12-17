@@ -84,37 +84,40 @@ router.get('/users', async (req, res) => {
 });
 
 router.post('/users', async(req, res) => {
-    const {body} = req;
+    const { body } = req;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const userIp = req.ipInfo.ip;
     const userAgent = req.headers['user-agent'];
     const forwardedFor = req.headers['x-forwarded-for'];
     const language = req.headers['accept-language'];
 
-    if (!body) {
+    if (!body || typeof body !== 'object') {
         return res.status(400).json({
-            message: "No user's info? Please specify!",
-            error: "NO-USER-INFO"
-        });
-    }
-    if (!body.username) {
-        return res.status(400).json({
-            message: "No user's username? Please specify!",
-            error: "NO-USER-USERNAME"
-        });
-    } else if (!body.password) {
-        return res.status(400).json({
-            message: "No user's password? Please specify!",
-            error: "NO-USER-PASSWORD"
-        });
-    } else if (!body.email) {
-        return res.status(400).json({
-            message: "No user's email? Please specify!",
-            error: "NO-USER-EMAIL"
+            message: "Invalid request body. Please provide user's info.",
+            error: "INVALID-REQUEST-BODY"
         });
     }
 
-    if (!emailRegex.test(body.email)) {
+    const { username, password, email } = body;
+
+    if (!username || typeof username !== 'string') {
+        return res.status(400).json({
+            message: "Invalid or missing user's username.",
+            error: "INVALID-USERNAME"
+        });
+    } else if (!password || typeof password !== 'string') {
+        return res.status(400).json({
+            message: "Invalid or missing user's password.",
+            error: "INVALID-PASSWORD"
+        });
+    } else if (!email || typeof email !== 'string') {
+        return res.status(400).json({
+            message: "Invalid or missing user's email.",
+            error: "INVALID-EMAIL"
+        });
+    }
+
+    if (!emailRegex.test(email)) {
         return res.status(400).json({
             isValid: false,
             message: 'Invalid email format.',
@@ -122,21 +125,21 @@ router.post('/users', async(req, res) => {
         });
     }
 
-    if (body.email.length > 40) {
+    if (email.length > 40) {
         return res.status(400).json({
             isValid: false,
             message: 'Email exceeds the maximum length of 40 characters.',
             error: "EMAIL-TOO-LONG"
         });
     }
-    if (body.username.length > 15) {
+    if (username.length > 15) {
         return res.status(400).json({
             isValid: false,
             message: 'Username exceeds the maximum length of 15 characters.',
             error: "USERNAME-TOO-LONG"
         });
     }
-    if (body.password.length > 30) {
+    if (password.length > 30) {
         return res.status(400).json({
             isValid: false,
             message: 'Password exceeds the maximum length of 30 characters.',
