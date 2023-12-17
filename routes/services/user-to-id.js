@@ -1,6 +1,5 @@
 const express = require('express');
 const SQLITE3 = require('better-sqlite3');
-const utils = require('../../js/utils');
 
 const router = express.Router();
 
