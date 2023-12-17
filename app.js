@@ -34,7 +34,6 @@ req.on('error', (error) => {
     console.error(`Error connecting to the internet: ${error.message}`);
 });
 
-
 app.use(helmet());
 app.use(cors());
 app.use(limiter);
@@ -51,7 +50,6 @@ app.use(
       },
     })
 );
-
 
 app.get('/', index);
 app.get('/users', users);
