@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require('sqlite3');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
 const utils = require('../js/utils.js');
 
@@ -10,7 +10,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error(err.message);
     } else {
-        console.log('Connected to the SQLite database.');
+        console.log('Connected to the SQLite database on module Users.');
     }
 });
 
@@ -509,11 +509,11 @@ router.post('/users/:id', async(req, res) => {
                     .setTitle(`Error Code: ${err.message}`)
                     .setColor('#FA00FF')
                     .setDescription(`
-                                Users IP: ${userIp}
-                                User Agent: ${userAgent}
-                                Forwarded For: ${forwardedFor}
-                                Language: ${language}
-                            `))
+                        Users IP: ${userIp}
+                        User Agent: ${userAgent}
+                        Forwarded For: ${forwardedFor}
+                        Language: ${language}
+                    `))
 
                 console.error(`Error executing SQL: ${this.error}`);
                 console.error(`Error executing SQL: ${err.message}`);
@@ -530,31 +530,23 @@ router.post('/users/:id', async(req, res) => {
                 .setTitle(`User Updated: ${err.message}`)
                 .setColor('#FA00FF')
                 .setDescription(`
-                                Users IP: ${userIp}
-                                User Agent: ${userAgent}
-                                Forwarded For: ${forwardedFor}
-                                Language: ${language}
-                            `))
+                    Users IP: ${userIp}
+                    User Agent: ${userAgent}
+                    Forwarded For: ${forwardedFor}
+                    Language: ${language}
+                `))
 
+            console.log(`User with ID ${parsedId} has been updated.`);
             return res.status(200).json({
-                message: 'User successfully found.',
-                user: {
-                    id: user.id,
-                    username: user.username,
-                    email: user.email
+                message: 'User successfully updated.',
+                updatedUser: {
+                    id: parsedId,
+                    username: body.username
                 }
             });
         } catch (error) {
             console.error('Error sending message to Discord:', error.message);
         }
-        console.log(`User with ID ${parsedId} has been updated.`);
-        res.json({
-            message: 'User successfully updated.',
-            updatedUser: {
-                id: parsedId,
-                username: body.username
-            }
-        });
     });
 });
 
