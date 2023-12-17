@@ -68,7 +68,7 @@ router.get('/users', async (req, res) => {
                 Language: ${language}
             `))
 
-        return res.status(200).json({
+        return res.status(400).json({
             message: "Nothing exists here so get out before everything collapses!",
             error: "NOTHING-EXISTS-HERE"
         });
@@ -236,7 +236,7 @@ router.get('/users/:id', async (req, res) => {
         const user = db.prepare('SELECT id, username, email, password FROM users WHERE id = ?').get(parsedId);
 
         if (!user) {
-            return res.status(404).json({
+            return res.status(400).json({
                 message: `User with ID ${parsedId} not found.`,
                 error: "USER-NOT-FOUND"
             });
@@ -281,7 +281,7 @@ router.get('/users/:id', async (req, res) => {
                     Language: ${language}
                 `));
 
-            return res.status(401).json({
+            return res.status(400).json({
                 message: 'Invalid password.',
                 error: "INVALID-PASSWORD"
             });
@@ -346,7 +346,7 @@ router.post('/users/:id', async (req, res) => {
         const user = db.prepare('SELECT password FROM users WHERE id = ?').get(parsedId);
 
         if (!user) {
-            return res.status(404).json({
+            return res.status(400).json({
                 message: `User with ID ${parsedId} not found.`,
                 error: "USER-NOT-FOUND"
             });
@@ -413,7 +413,7 @@ router.post('/users/:id', async (req, res) => {
                     `));
 
                 console.log(`User with ID ${parsedId} has been updated.`);
-                return res.status(200).json({
+                return res.status(400).json({
                     message: 'User successfully updated.',
                     updatedUser: {
                         id: parsedId,
