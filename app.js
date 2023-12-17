@@ -25,8 +25,6 @@ app.use(cookieParser(keys.keys.cookieparser));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(expressip().getIpInfoMiddleware);
-
-// Apply CSRF protection globally
 app.use(csrfProtection);
 
 app.use(
@@ -40,10 +38,9 @@ app.use(
     })
 );
 
-// Define routes
-app.get('/', rateLimit, index);
-app.get('/users', rateLimit, users);
-app.get('/services', rateLimit, services);
+app.get('/', index);
+app.get('/users', users);
+app.get('/services', services);
 app.get('/users/:id', rateLimit, users);
 app.get('/services/user-to-id:id', rateLimit, usertoid);
 
