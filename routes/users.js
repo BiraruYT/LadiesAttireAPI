@@ -8,7 +8,7 @@ const router = express.Router();
 const dbPath = "./sqlitedb/dev-users.db";
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
-        console.error(err.message);
+        console.error(err.message + ", On module Users.");
     } else {
         console.log('Connected to the SQLite database on module Users.');
     }
