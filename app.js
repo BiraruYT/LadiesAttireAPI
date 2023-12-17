@@ -1,6 +1,9 @@
 const express = require('express');
 const expressip = require('express-ip');
 const helmet = require('helmet');
+const csrf = require('csurf');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const https = require('https');
@@ -37,8 +40,11 @@ req.on('error', (error) => {
 app.use(helmet());
 app.use(cors());
 app.use(limiter);
-app.use(express.json());
+app.use(cookieParser());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(expressip().getIpInfoMiddleware);
+app.use(csrf());
 
 app.use(
     helmet.contentSecurityPolicy({
@@ -50,6 +56,20 @@ app.use(
       },
     })
 );
+app.use((req, res, next) => {
+    res.setHeader('X-CSRF-Token', req.csrfToken());
+    next();
+});
+
+app.use((err, req, res, next) => {
+    if (err.code === 'EBADCSRFTOKEN') {
+        return res.status(403).json({
+            message: 'CSRF token validation failed.',
+            error: 'CSRF-TOKEN-INVALID'
+        });
+    }
+    next(err);
+});
 
 app.get('/', index);
 app.get('/users', users);
