@@ -5,7 +5,6 @@ const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit');
 const keys = require("./js/keys");
 
 const app = express();
@@ -42,11 +41,11 @@ app.get('/', index);
 app.get('/users', users);
 app.get('/services', services);
 app.get('/services/user-to-id', usertoid);
-app.get('/users/:id', rateLimit, users);
-app.get('/services/user-to-id/:username', rateLimit, usertoid);
+app.get('/users/:id', users);
+app.get('/services/user-to-id/:username', usertoid);
 
-app.post('/users', csrfProtection, rateLimit, users);
-app.post('/users/:id', csrfProtection, rateLimit, users);
+app.post('/users', csrfProtection, users);
+app.post('/users/:id', csrfProtection, users);
 
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
