@@ -43,7 +43,7 @@ app.get('/users', users);
 app.get('/services', services);
 app.get('/services/user-to-id', usertoid);
 app.get('/users/:id', rateLimit, users);
-app.get('/services/user-to-id:id', rateLimit, usertoid);
+app.get('/services/user-to-id/:username', rateLimit, usertoid);
 
 app.post('/users', csrfProtection, rateLimit, users);
 app.post('/users/:id', csrfProtection, rateLimit, users);
