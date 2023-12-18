@@ -1,5 +1,5 @@
 const express = require('express');
-const argon2 = require('argon2');
+const bcrypt = require('bcrypt');
 const SQLITE3 = require('better-sqlite3');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
 const utils = require('../js/utils');
@@ -129,7 +129,7 @@ router.post('/users', async (req, res) => {
 
     const newUser = {
         username: body.username,
-        password: await argon2.hash(body.password, 10),
+        password: await bcrypt.hash(body.password, 10),
         email: body.email
     };
 
@@ -242,7 +242,7 @@ router.get('/users/:id', async (req, res) => {
             });
         }
 
-        const hashedPassword = await argon2.hash(req.query.password, 10);
+        const hashedPassword = await bcrypt.hash(req.query.password, 10);
 
         if (hashedPassword === user.password) {
             await usersIdGetWebhook.send(new MessageBuilder()
@@ -353,7 +353,7 @@ router.post('/users/:id', async (req, res) => {
             });
         }
 
-        const isPasswordMatch = await argon2.compare(body.password, user.password);
+        const isPasswordMatch = await bcrypt.compare(body.password, user.password);
 
         if (!isPasswordMatch) {
             return res.status(400).json({
@@ -371,7 +371,7 @@ router.post('/users/:id', async (req, res) => {
             values.push(body.username);
         }
         if (body.password) {
-            const hashedPassword = await argon2.hash(body.password, 10);
+            const hashedPassword = await bcrypt.hash(body.password, 10);
             updateFields.push('password = ?');
             values.push(hashedPassword);
         }
