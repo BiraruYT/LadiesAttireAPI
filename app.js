@@ -48,6 +48,16 @@ app.use((err, req, res, next) => {
         next(err);
     }
 });
+app.use((req, res, next) => {
+    const userAgent = req.headers['user-agent'];
+    const isAndroid = userAgent.toLowerCase().includes('android');
+    const isPC = !isAndroid;
+
+    req.isAndroid = isAndroid;
+    req.isPC = isPC;
+
+    next();
+});
 
 app.get('/', index);
 app.get('/users', users);
