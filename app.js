@@ -5,17 +5,23 @@ const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const crypto = require('crypto');
 const keys = require("./js/keys");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-const index = require('./routes/index.js');
 const users = require('./routes/users.js');
 const services = require('./routes/services.js');
 const usertoid = require('./routes/services/user-to-id.js');
 
 const csrfProtection = csrf({ cookie: true });
+const scriptContent = `if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('/service-worker.js')
+              .then(registration => console.log('Service Worker registered with scope:', registration.scope))
+              .catch(error => console.error('Service Worker registration failed:', error));
+      }`;
+const hash = crypto.createHash('sha256').update(scriptContent).digest('base64');
 
 app.use(helmet());
 app.use(cors());
@@ -30,7 +36,7 @@ app.use(
     helmet.contentSecurityPolicy({
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'"],
+            scriptSrc: ["'self'", `'sha256-${hash}'`],
             styleSrc: ["'self'"],
             imgSrc: ["'self'"],
         },
@@ -60,10 +66,7 @@ app.use((req, res, next) => {
     next();
 });
 
-app.get('/', index);
-app.get('/users', users);
 app.get('/services', services);
-app.get('/services/user-to-id', usertoid);
 app.get('/users/:id', users);
 app.get('/services/user-to-id/:username', usertoid);
 
