@@ -1,5 +1,10 @@
 function isInt(value) {
-    return !Number.isNaN(parseFloat(value));
+    var x;
+    if (isNaN(value)) {
+        return false;
+    }
+    x = parseFloat(value);
+    return true
 }
 
 module.exports = {
