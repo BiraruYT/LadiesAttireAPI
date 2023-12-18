@@ -1,5 +1,4 @@
 const express = require('express');
-const expressip = require('express-ip');
 const helmet = require('helmet');
 const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
@@ -12,7 +11,6 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 const users = require('./routes/users.js');
-const services = require('./routes/services.js');
 const usertoid = require('./routes/services/user-to-id.js');
 
 const csrfProtection = csrf({ cookie: true });
@@ -29,7 +27,6 @@ app.use(cookieParser(keys.keys.cookieparser));
 app.use(express.static('public'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(expressip().getIpInfoMiddleware);
 app.use(csrfProtection);
 
 app.use(
@@ -66,7 +63,6 @@ app.use((req, res, next) => {
     next();
 });
 
-app.get('/services', services);
 app.get('/users/:id', users);
 app.get('/services/user-to-id/:username', usertoid);
 
