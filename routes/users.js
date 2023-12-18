@@ -1,18 +1,16 @@
 const express = require('express');
 const argon2 = require('argon2');
 const SQLITE3 = require('better-sqlite3');
-const { Webhook, MessageBuilder } = require('discord-webhook-node');
+const createDOMPurify = require('dompurify');
+const { JSDOM } = require('jsdom');
+const window = new JSDOM('').window;
+const DOMPurify = createDOMPurify(window);
 const utils = require('../js/utils');
 
 const router = express.Router();
 
 const dbPath = "./sqlitedb/dev-users.db";
 const db = new SQLITE3(dbPath, { verbose: console.log });
-
-const WEBHOOK_IMAGE_URL = 'https://cdn.discordapp.com/attachments/1185844013119590402/1185848513377079317/Ladies_Attire.png?ex=65911a7d&is=657ea57d&hm=f2bbc56b0fbe985928c61d917f72a2ca9a7507872598a64ddb8b93a197718cbf&';
-const usersPostWebhook = new Webhook("https://discord.com/api/webhooks/1185846005242015855/c3Ap19znWx8YmzMNp1_H-IDKDD1_W4n1ZkmEF_01BSpYeNjmsI7cXgIDZ0PNGRuLgHYR");
-const usersIdGetWebhook = new Webhook("https://discord.com/api/webhooks/1185846170212372570/wVH5kD4mOmvEHZCiCo58oJmPf7Njeoo4asJ01jZqVbMnaVNVvYqR8dgKeyab9p-PhPaB");
-const usersIdPostWebhook = new Webhook("https://discord.com/api/webhooks/1185871628870111332/QLL6qJPLOul2J3OCBrr2iuMA_sVFLoXpQjpOjKddO-Z6GewKy0wZK5CKkn6wim5sXx-q");
 
 db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
@@ -31,37 +29,9 @@ db.run(`
 `);
 */
 
-function setupWebHooks() {
-    usersPostWebhook.setUsername('Server Info');
-    usersIdGetWebhook.setUsername('Server Info');
-    usersIdPostWebhook.setUsername('Server Info');
-
-    usersPostWebhook.setAvatar(WEBHOOK_IMAGE_URL);
-    usersIdGetWebhook.setAvatar(WEBHOOK_IMAGE_URL);
-    usersIdPostWebhook.setAvatar(WEBHOOK_IMAGE_URL);
-
-    usersPostWebhook.send('Server is online.');
-    usersIdGetWebhook.send('Server is online.');
-    usersIdPostWebhook.send('Server is online.');
-}
-
-setupWebHooks();
-
-router.get('/users', async (req, res) => {
-    return res.status(400).json({
-        message: "Nothing exists here so get out before everything collapses!",
-        error: "NOTHING-EXISTS-HERE",
-        csrfToken: req.csrfToken()
-    });
-});
-
 router.post('/users', async (req, res) => {
     const { body } = req;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const userIp = req.ipInfo.ip;
-    const userAgent = req.headers['user-agent'];
-    const forwardedFor = req.headers['x-forwarded-for'];
-    const language = req.headers['accept-language'];
 
     if (!body || typeof body !== 'object') {
         return res.status(400).json({
@@ -128,25 +98,15 @@ router.post('/users', async (req, res) => {
     }
 
     const newUser = {
-        username: body.username,
-        password: await argon2.hash(body.password),
-        email: body.email
+        username: DOMPurify.sanitize(body.username),
+        password: await argon2.hash(DOMPurify.sanitize(body.password)),
+        email: DOMPurify.sanitize(body.email),
     };
 
     try {
         const existingUser = db.prepare('SELECT id FROM users WHERE username = ? OR email = ?').get(newUser.username, newUser.email);
 
         if (existingUser) {
-            await usersPostWebhook.send(new MessageBuilder()
-                .setTitle(`Existing User: ${existingUser.id}`)
-                .setColor('#FA00FF')
-                .setDescription(`
-                    Users IP: ${userIp}
-                    User Agent: ${userAgent}
-                    Forwarded For: ${forwardedFor}
-                    Language: ${language}
-                `));
-
             return res.status(400).json({
                 message: 'User with the same username or email already exists.',
                 error: 'USER-ALREADY-EXISTS',
@@ -156,16 +116,6 @@ router.post('/users', async (req, res) => {
         }
 
         const { lastInsertRowid } = db.prepare('INSERT INTO users (username, password, email) VALUES (?, ?, ?)').run(newUser.username, newUser.password, newUser.email);
-
-        await usersPostWebhook.send(new MessageBuilder()
-            .setTitle(`User Created: ${lastInsertRowid}`)
-            .setColor('#FA00FF')
-            .setDescription(`
-                Users IP: ${userIp}
-                User Agent: ${userAgent}
-                Forwarded For: ${forwardedFor}
-                Language: ${language}
-            `));
 
         console.log(`A new user has been added with ID ${lastInsertRowid}`);
         return res.status(200).json({
@@ -178,16 +128,6 @@ router.post('/users', async (req, res) => {
             csrfToken: req.csrfToken()
         });
     } catch (error) {
-        await usersPostWebhook.send(new MessageBuilder()
-            .setTitle(`Error Code: ${error.message}`)
-            .setColor('#FA00FF')
-            .setDescription(`
-                Users IP: ${userIp}
-                User Agent: ${userAgent}
-                Forwarded For: ${forwardedFor}
-                Language: ${language}
-            `));
-
         console.error(`Error executing SQL: ${error.message}`);
         return res.status(500).json({
             message: 'Internal Server Error',
@@ -266,10 +206,6 @@ router.get('/users/:id', async (req, res) => {
 router.post('/users/:id', async (req, res) => {
     const { id } = req.params;
     const { body } = req;
-    const userIp = req.ipInfo.ip;
-    const userAgent = req.headers['user-agent'];
-    const forwardedFor = req.headers['x-forwarded-for'];
-    const language = req.headers['accept-language'];
 
     if (!id) {
         return res.status(400).json({
@@ -330,52 +266,28 @@ router.post('/users/:id', async (req, res) => {
 
         if (body.username) {
             updateFields.push('username = ?');
-            values.push(body.username);
+            values.push(DOMPurify.sanitize(body.username));
         }
         if (body.password) {
-            const hashedPassword = await argon2.hash(body.password);
+            const hashedPassword = await argon2.hash(DOMPurify.sanitize(body.password));
             updateFields.push('password = ?');
             values.push(hashedPassword);
         }
         if (body.email) {
             updateFields.push('email = ?');
-            values.push(body.email);
+            values.push(DOMPurify.sanitize(body.email));
         }
 
-        db.prepare(`UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`, [...values, parsedId], async function (err) {
-            if (err) {
-                try {
-                    await usersIdPostWebhook.send(new MessageBuilder()
-                        .setTitle(`Error Code: ${err.message}`)
-                        .setColor('#FA00FF')
-                        .setDescription(`
-                            Users IP: ${userIp}
-                            User Agent: ${userAgent}
-                            Forwarded For: ${forwardedFor}
-                            Language: ${language}
-                        `));
-
+        db.prepare(`UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`)
+            .run([...values, parsedId], async function (err) {
+                if (err) {
                     console.error(`Error executing SQL: ${err.message}`);
                     return res.status(500).json({
                         message: 'Internal Server Error',
                         error: err.message,
                         csrfToken: req.csrfToken()
                     });
-                } catch (error) {
-                    console.error('Error sending message to Discord:', error.message);
                 }
-            }
-
-            try {
-                await usersIdPostWebhook.send(new MessageBuilder()
-                    .setTitle(`User Updated: ${parsedId}`)
-                    .setColor('#FA00FF')
-                    .setDescription(`
-                        Users IP: ${userIp}
-                        User Agent: ${userAgent}
-                        Forwarded For: ${forwardedFor}
-                        Language: ${language}
-                    `));
 
                 console.log(`User with ID ${parsedId} has been updated.`);
                 return res.status(400).json({
@@ -386,39 +298,14 @@ router.post('/users/:id', async (req, res) => {
                     },
                     csrfToken: req.csrfToken()
                 });
-            } catch (error) {
-                console.error('Error sending message to Discord:', error.message);
-                return res.status(500).json({
-                    error: 'Internal Server Error',
-                    csrfToken: req.csrfToken()
-                });
-            }
-        }).run();
+            });
     } catch (err) {
-        try {
-            await usersIdPostWebhook.send(new MessageBuilder()
-                .setTitle(`Error Code: ${err.message}`)
-                .setColor('#FA00FF')
-                .setDescription(`
-                    Users IP: ${userIp}
-                    User Agent: ${userAgent}
-                    Forwarded For: ${forwardedFor}
-                    Language: ${language}
-                `));
-
-            console.error(err.message);
-            return res.status(500).json({
-                message: 'Internal Server Error',
-                error: err.message,
-                csrfToken: req.csrfToken()
-            });
-        } catch (error) {
-            console.error('Error sending message to Discord:', error.message);
-            return res.status(500).json({
-                error: 'Internal Server Error',
-                csrfToken: req.csrfToken()
-            });
-        }
+        console.error(err.message);
+        return res.status(500).json({
+            message: 'Internal Server Error',
+            error: err.message,
+            csrfToken: req.csrfToken()
+        });
     }
 });
 
