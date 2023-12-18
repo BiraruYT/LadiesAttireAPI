@@ -48,11 +48,6 @@ function setupWebHooks() {
 setupWebHooks();
 
 router.get('/users', async (req, res) => {
-    const userIp = req.ipInfo.ip;
-    const userAgent = req.headers['user-agent'];
-    const forwardedFor = req.headers['x-forwarded-for'];
-    const language = req.headers['accept-language'];
-
     return res.status(400).json({
         message: "Nothing exists here so get out before everything collapses!",
         error: "NOTHING-EXISTS-HERE",
