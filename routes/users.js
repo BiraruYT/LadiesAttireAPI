@@ -127,13 +127,14 @@ router.post('/users', async (req, res) => {
             });
         }
 
-        const { lastInsertRowId } = db.prepare('INSERT INTO users (username, password, email) VALUES (?, ?, ?)').run(newUser.username, newUser.password, newUser.email);
+        const stmt = db.prepare('INSERT INTO users (username, password, email) VALUES (?, ?, ?)');
+        const result = stmt.run(newUser.username, newUser.password, newUser.email);
 
-        console.log(`A new user has been added with ID ${lastInsertRowId}`);
+        console.log(`A new user has been added with ID ${result.lastInsertRowId}`);
         return res.status(200).json({
             message: 'User successfully added.',
             newUser: {
-                id: lastInsertRowId,
+                id: result.lastInsertRowId,
                 username: newUser.username,
                 email: newUser.email
             },
@@ -252,7 +253,7 @@ router.post('/users/:id', async (req, res) => {
         });
     }
 
-    if (!body.username && !body.password && !body.email) {
+    if (!body.update.username && !body.update.password && !body.update.email) {
         return res.status(400).json({
             message: "No fields provided for update. Please specify at least one field (username, password, email).",
             error: "NO-FIELDS-FOR-UPDATE",
@@ -293,14 +294,14 @@ router.post('/users/:id', async (req, res) => {
         const updateFields = [];
         const values = [];
 
-        if (body.username) {
+        if (body.update.username) {
             updateFields.push('username = ?');
-            values.push(DOMPurify.sanitize(body.username));
+            values.push(DOMPurify.sanitize(body.update.username));
         }
-        if (body.password) {
+        if (body.update.password) {
             let hashedPassword
             try {
-                hashedPassword = await argon2.hash(DOMPurify.sanitize(body.password));
+                hashedPassword = await argon2.hash(DOMPurify.sanitize(body.update.password));
             }
             catch (err) {
                 return res.status(500).json({
@@ -311,9 +312,9 @@ router.post('/users/:id', async (req, res) => {
             updateFields.push('password = ?');
             values.push(hashedPassword);
         }
-        if (body.email) {
+        if (body.update.email) {
             updateFields.push('email = ?');
-            values.push(DOMPurify.sanitize(body.email));
+            values.push(DOMPurify.sanitize(body.update.email));
         }
 
         db.prepare(`UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`)
@@ -327,13 +328,13 @@ router.post('/users/:id', async (req, res) => {
                     });
                 }
 
+                // Fetch the updated user from the database
+                const updatedUser = db.prepare('SELECT id, username, email FROM users WHERE id = ?').get(parsedId);
+
                 console.log(`User with ID ${parsedId} has been updated.`);
-                return res.status(400).json({
+                return res.status(200).json({
                     message: 'User successfully updated.',
-                    updatedUser: {
-                        id: parsedId,
-                        username: body.username
-                    },
+                    updatedUser: updatedUser,
                     csrfToken: req.csrfToken()
                 });
             });
