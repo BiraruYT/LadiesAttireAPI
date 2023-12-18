@@ -1,5 +1,5 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
+const argon2 = require('argon2');
 const SQLITE3 = require('better-sqlite3');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
 const utils = require('../js/utils');
@@ -129,7 +129,7 @@ router.post('/users', async (req, res) => {
 
     const newUser = {
         username: body.username,
-        password: await bcrypt.hash(body.password, 10),
+        password: await argon2.hash(body.password),
         email: body.email
     };
 
@@ -199,10 +199,7 @@ router.post('/users', async (req, res) => {
 
 router.get('/users/:id', async (req, res) => {
     const { id } = req.params;
-    const userIp = req.ipInfo.ip;
-    const userAgent = req.headers['user-agent'];
-    const forwardedFor = req.headers['x-forwarded-for'];
-    const language = req.headers['accept-language'];
+    const { body } = req;
 
     if (!id) {
         return res.status(400).json({
@@ -223,82 +220,47 @@ router.get('/users/:id', async (req, res) => {
         });
     }
 
-    try {
-        const user = db.prepare('SELECT id, username, email, password FROM users WHERE id = ?').get(parsedId);
+    const user = db.prepare('SELECT id, username, email, password FROM users WHERE id = ?').get(parsedId);
 
-        if (!user) {
-            return res.status(400).json({
-                message: `User with ID ${parsedId} not found.`,
-                error: "USER-NOT-FOUND",
-                csrfToken: req.csrfToken()
-            });
-        }
-
-        if (!utils.isInt(parsedId)) {
-            return res.status(400).json({
-                message: "User's id isn't a number! Please specify an integer.",
-                error: "USER-ID-NOT-INT",
-                csrfToken: req.csrfToken()
-            });
-        }
-
-        const hashedPassword = await bcrypt.hash(req.query.password, 10);
-
-        if (hashedPassword === user.password) {
-            await usersIdGetWebhook.send(new MessageBuilder()
-                .setTitle(`Sent User: ${user.id}`)
-                .setColor('#FA00FF')
-                .setDescription(`
-                    Users IP: ${userIp}
-                    User Agent: ${userAgent}
-                    Forwarded For: ${forwardedFor}
-                    Language: ${language}
-                `));
-
-            return res.status(200).json({
-                message: 'User successfully found.',
-                user: {
-                    id: user.id,
-                    username: user.username,
-                    email: user.email
-                },
-                csrfToken: req.csrfToken()
-            });
-        } else {
-            await usersIdGetWebhook.send(new MessageBuilder()
-                .setTitle(`Sent User: ${user.id}`)
-                .setColor('#FA00FF')
-                .setDescription(`
-                    Users IP: ${userIp}
-                    User Agent: ${userAgent}
-                    Forwarded For: ${forwardedFor}
-                    Language: ${language}
-                `));
-
-            return res.status(400).json({
-                message: 'Invalid password.',
-                error: "INVALID-PASSWORD",
-                csrfToken: req.csrfToken()
-            });
-        }
-    } catch (err) {
-        await usersIdGetWebhook.send(new MessageBuilder()
-            .setTitle(`Error Code: ${err.message}`)
-            .setColor('#FA00FF')
-            .setDescription(`
-                Users IP: ${userIp}
-                User Agent: ${userAgent}
-                Forwarded For: ${forwardedFor}
-                Language: ${language}
-            `));
-
-        console.error(err.message);
-        return res.status(500).json({
-            message: 'Internal Server Error',
-            error: err.message,
+    if (!user) {
+        return res.status(400).json({
+            message: `User with ID ${parsedId} not found.`,
+            error: "USER-NOT-FOUND",
             csrfToken: req.csrfToken()
         });
     }
+
+    if (!utils.isInt(parsedId)) {
+        return res.status(400).json({
+            message: "User's id isn't a number! Please specify an integer.",
+            error: "USER-ID-NOT-INT",
+            csrfToken: req.csrfToken()
+        });
+    }
+
+    const hashedPassword = await argon2.hash(body.password);
+
+    if (hashedPassword === user.password) {
+        return res.status(200).json({
+            message: 'User successfully found.',
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email
+            },
+            csrfToken: req.csrfToken()
+        });
+    } else {
+        return res.status(200).json({
+            message: 'User successfully found',
+            user: {
+                id: user.id,
+                username: user.username
+            },
+            csrfToken: req.csrfToken()
+        });
+    }
+
 });
 
 router.post('/users/:id', async (req, res) => {
@@ -353,7 +315,7 @@ router.post('/users/:id', async (req, res) => {
             });
         }
 
-        const isPasswordMatch = await bcrypt.compare(body.password, user.password);
+        const isPasswordMatch = await argon2.verify(user.password, body.password);
 
         if (!isPasswordMatch) {
             return res.status(400).json({
@@ -371,7 +333,7 @@ router.post('/users/:id', async (req, res) => {
             values.push(body.username);
         }
         if (body.password) {
-            const hashedPassword = await bcrypt.hash(body.password, 10);
+            const hashedPassword = await argon2.hash(body.password);
             updateFields.push('password = ?');
             values.push(hashedPassword);
         }
