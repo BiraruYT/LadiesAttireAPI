@@ -1,2 +1,5 @@
 js/keys.js
 sqlitedb
+sqlitedb/backup-prod-users.db
+sqlitedb/dev-users.db
+sqlitedb/prod-users.db
