@@ -10,7 +10,6 @@ const dbPath = "./sqlitedb/dev-users.db";
 const db = new SQLITE3(dbPath, { verbose: console.log });
 
 const WEBHOOK_IMAGE_URL = 'https://cdn.discordapp.com/attachments/1185844013119590402/1185848513377079317/Ladies_Attire.png?ex=65911a7d&is=657ea57d&hm=f2bbc56b0fbe985928c61d917f72a2ca9a7507872598a64ddb8b93a197718cbf&';
-const usersGetWebhook = new Webhook("https://discord.com/api/webhooks/1185845660273090640/ak4x7X9um1cX6KvDchNMQjmSmQ_eu2dW-VMrjlEK9m6zYlMUpNYQPV5I4Yzod4f161wH");
 const usersPostWebhook = new Webhook("https://discord.com/api/webhooks/1185846005242015855/c3Ap19znWx8YmzMNp1_H-IDKDD1_W4n1ZkmEF_01BSpYeNjmsI7cXgIDZ0PNGRuLgHYR");
 const usersIdGetWebhook = new Webhook("https://discord.com/api/webhooks/1185846170212372570/wVH5kD4mOmvEHZCiCo58oJmPf7Njeoo4asJ01jZqVbMnaVNVvYqR8dgKeyab9p-PhPaB");
 const usersIdPostWebhook = new Webhook("https://discord.com/api/webhooks/1185871628870111332/QLL6qJPLOul2J3OCBrr2iuMA_sVFLoXpQjpOjKddO-Z6GewKy0wZK5CKkn6wim5sXx-q");
@@ -33,20 +32,17 @@ db.run(`
 */
 
 function setupWebHooks() {
-    usersGetWebhook.setUsername('Server Info');
     usersPostWebhook.setUsername('Server Info');
     usersIdGetWebhook.setUsername('Server Info');
     usersIdPostWebhook.setUsername('Server Info');
 
-    usersGetWebhook.setAvatar(WEBHOOK_IMAGE_URL);
     usersPostWebhook.setAvatar(WEBHOOK_IMAGE_URL);
     usersIdGetWebhook.setAvatar(WEBHOOK_IMAGE_URL);
     usersIdPostWebhook.setAvatar(WEBHOOK_IMAGE_URL);
 
-    usersGetWebhook.send('Server is online.')
-    usersPostWebhook.send('Server is online.')
-    usersIdGetWebhook.send('Server is online.')
-    usersIdPostWebhook.send('Server is online.')
+    usersPostWebhook.send('Server is online.');
+    usersIdGetWebhook.send('Server is online.');
+    usersIdPostWebhook.send('Server is online.');
 }
 
 setupWebHooks();
@@ -57,25 +53,11 @@ router.get('/users', async (req, res) => {
     const forwardedFor = req.headers['x-forwarded-for'];
     const language = req.headers['accept-language'];
 
-    try {
-        await usersGetWebhook.send(new MessageBuilder()
-            .setTitle('Nothing Exists Here')
-            .setColor('#FA00FF')
-            .setDescription(`
-                Users IP: ${userIp}
-                User Agent: ${userAgent}
-                Forwarded For: ${forwardedFor}
-                Language: ${language}
-            `))
-
-        return res.status(400).json({
-            message: "Nothing exists here so get out before everything collapses!",
-            error: "NOTHING-EXISTS-HERE",
-            csrfToken: req.csrfToken()
-        });
-    } catch (error) {
-        console.error('Error sending message to Discord:', error.message);
-    }
+    return res.status(400).json({
+        message: "Nothing exists here so get out before everything collapses!",
+        error: "NOTHING-EXISTS-HERE",
+        csrfToken: req.csrfToken()
+    });
 });
 
 router.post('/users', async (req, res) => {

@@ -15,7 +15,7 @@ const users = require('./routes/users.js');
 const services = require('./routes/services.js');
 const usertoid = require('./routes/services/user-to-id.js');
 
-const csrfProtection = csrf({ cookie: { httpOnly: true, secure: process.env.NODE_ENV === 'production' } });
+const csrfProtection = csrf({ cookie: true });
 
 app.use(helmet());
 app.use(cors());
@@ -35,6 +35,19 @@ app.use(
         },
     })
 );
+app.use((req, res, next) => {
+    res.locals.csrfToken = req.csrfToken();
+    next();
+});
+app.use((err, req, res, next) => {
+    if (err.code === 'EBADCSRFTOKEN') {
+        res.status(403).json({
+            error: 'CSRF token validation failure'
+        });
+    } else {
+        next(err);
+    }
+});
 
 app.get('/', index);
 app.get('/users', users);
