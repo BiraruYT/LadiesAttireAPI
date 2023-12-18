@@ -8,7 +8,8 @@ router.get('/services', function(req, res) {
         services: [
             "services/user-to-id:username"
         ],
-        error: "NOTHING-EXISTS-HERE"
+        error: "NOTHING-EXISTS-HERE",
+        csrfToken: req.csrfToken()
     });
 });
 

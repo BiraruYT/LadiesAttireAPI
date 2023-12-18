@@ -70,7 +70,8 @@ router.get('/users', async (req, res) => {
 
         return res.status(400).json({
             message: "Nothing exists here so get out before everything collapses!",
-            error: "NOTHING-EXISTS-HERE"
+            error: "NOTHING-EXISTS-HERE",
+            csrfToken: req.csrfToken()
         });
     } catch (error) {
         console.error('Error sending message to Discord:', error.message);
@@ -88,7 +89,8 @@ router.post('/users', async (req, res) => {
     if (!body || typeof body !== 'object') {
         return res.status(400).json({
             message: "Invalid request body. Please provide user's info.",
-            error: "INVALID-REQUEST-BODY"
+            error: "INVALID-REQUEST-BODY",
+            csrfToken: req.csrfToken()
         });
     }
 
@@ -97,17 +99,20 @@ router.post('/users', async (req, res) => {
     if (!username || typeof username !== 'string') {
         return res.status(400).json({
             message: "Invalid or missing user's username.",
-            error: "INVALID-USERNAME"
+            error: "INVALID-USERNAME",
+            csrfToken: req.csrfToken()
         });
     } else if (!password || typeof password !== 'string') {
         return res.status(400).json({
             message: "Invalid or missing user's password.",
-            error: "INVALID-PASSWORD"
+            error: "INVALID-PASSWORD",
+            csrfToken: req.csrfToken()
         });
     } else if (!email || typeof email !== 'string') {
         return res.status(400).json({
             message: "Invalid or missing user's email.",
-            error: "INVALID-EMAIL"
+            error: "INVALID-EMAIL",
+            csrfToken: req.csrfToken()
         });
     }
 
@@ -115,7 +120,8 @@ router.post('/users', async (req, res) => {
         return res.status(400).json({
             isValid: false,
             message: 'Invalid email format.',
-            error: "INVALID-EMAIL-FORMAT"
+            error: "INVALID-EMAIL-FORMAT",
+            csrfToken: req.csrfToken()
         });
     }
 
@@ -123,21 +129,24 @@ router.post('/users', async (req, res) => {
         return res.status(400).json({
             isValid: false,
             message: 'Email exceeds the maximum length of 40 characters.',
-            error: "EMAIL-TOO-LONG"
+            error: "EMAIL-TOO-LONG",
+            csrfToken: req.csrfToken()
         });
     }
     if (username.length > 15) {
         return res.status(400).json({
             isValid: false,
             message: 'Username exceeds the maximum length of 15 characters.',
-            error: "USERNAME-TOO-LONG"
+            error: "USERNAME-TOO-LONG",
+            csrfToken: req.csrfToken()
         });
     }
     if (password.length > 30) {
         return res.status(400).json({
             isValid: false,
             message: 'Password exceeds the maximum length of 30 characters.',
-            error: "PASSWORD-TOO-LONG"
+            error: "PASSWORD-TOO-LONG",
+            csrfToken: req.csrfToken()
         });
     }
 
@@ -164,7 +173,8 @@ router.post('/users', async (req, res) => {
             return res.status(400).json({
                 message: 'User with the same username or email already exists.',
                 error: 'USER-ALREADY-EXISTS',
-                existingUserId: existingUser.id
+                existingUserId: existingUser.id,
+                csrfToken: req.csrfToken()
             });
         }
 
@@ -187,7 +197,8 @@ router.post('/users', async (req, res) => {
                 id: lastInsertRowid,
                 username: newUser.username,
                 email: newUser.email
-            }
+            },
+            csrfToken: req.csrfToken()
         });
     } catch (error) {
         await usersPostWebhook.send(new MessageBuilder()
@@ -203,7 +214,8 @@ router.post('/users', async (req, res) => {
         console.error(`Error executing SQL: ${error.message}`);
         return res.status(500).json({
             message: 'Internal Server Error',
-            error: error.message
+            error: error.message,
+            csrfToken: req.csrfToken()
         });
     }
 });
@@ -218,7 +230,8 @@ router.get('/users/:id', async (req, res) => {
     if (!id) {
         return res.status(400).json({
             message: "No user's id? Please specify!",
-            error: "NO-USER-ID"
+            error: "NO-USER-ID",
+            csrfToken: req.csrfToken()
         });
     }
 
@@ -228,7 +241,8 @@ router.get('/users/:id', async (req, res) => {
     if (!isInt) {
         return res.status(400).json({
             message: "User's id isn't a number! Please specify an integer.",
-            error: "USER-ID-NOT-INT"
+            error: "USER-ID-NOT-INT",
+            csrfToken: req.csrfToken()
         });
     }
 
@@ -238,14 +252,16 @@ router.get('/users/:id', async (req, res) => {
         if (!user) {
             return res.status(400).json({
                 message: `User with ID ${parsedId} not found.`,
-                error: "USER-NOT-FOUND"
+                error: "USER-NOT-FOUND",
+                csrfToken: req.csrfToken()
             });
         }
 
         if (!utils.isInt(parsedId)) {
             return res.status(400).json({
                 message: "User's id isn't a number! Please specify an integer.",
-                error: "USER-ID-NOT-INT"
+                error: "USER-ID-NOT-INT",
+                csrfToken: req.csrfToken()
             });
         }
 
@@ -268,7 +284,8 @@ router.get('/users/:id', async (req, res) => {
                     id: user.id,
                     username: user.username,
                     email: user.email
-                }
+                },
+                csrfToken: req.csrfToken()
             });
         } else {
             await usersIdGetWebhook.send(new MessageBuilder()
@@ -283,7 +300,8 @@ router.get('/users/:id', async (req, res) => {
 
             return res.status(400).json({
                 message: 'Invalid password.',
-                error: "INVALID-PASSWORD"
+                error: "INVALID-PASSWORD",
+                csrfToken: req.csrfToken()
             });
         }
     } catch (err) {
@@ -300,7 +318,8 @@ router.get('/users/:id', async (req, res) => {
         console.error(err.message);
         return res.status(500).json({
             message: 'Internal Server Error',
-            error: err.message
+            error: err.message,
+            csrfToken: req.csrfToken()
         });
     }
 });
@@ -316,12 +335,14 @@ router.post('/users/:id', async (req, res) => {
     if (!id) {
         return res.status(400).json({
             message: "No user's id? Please specify!",
-            error: "NO-USER-ID"
+            error: "NO-USER-ID",
+            csrfToken: req.csrfToken()
         });
     } else if (!body) {
         return res.status(400).json({
             message: "No user's info? Please specify!",
-            error: "NO-USER-INFO"
+            error: "NO-USER-INFO",
+            csrfToken: req.csrfToken()
         });
     }
 
@@ -331,14 +352,16 @@ router.post('/users/:id', async (req, res) => {
     if (!isInt) {
         return res.status(400).json({
             message: "User's id isn't a number! Please specify an integer.",
-            error: "USER-ID-NOT-INT"
+            error: "USER-ID-NOT-INT",
+            csrfToken: req.csrfToken()
         });
     }
 
     if (!body.username && !body.password && !body.email) {
         return res.status(400).json({
             message: "No fields provided for update. Please specify at least one field (username, password, email).",
-            error: "NO-FIELDS-FOR-UPDATE"
+            error: "NO-FIELDS-FOR-UPDATE",
+            csrfToken: req.csrfToken()
         });
     }
 
@@ -348,7 +371,8 @@ router.post('/users/:id', async (req, res) => {
         if (!user) {
             return res.status(400).json({
                 message: `User with ID ${parsedId} not found.`,
-                error: "USER-NOT-FOUND"
+                error: "USER-NOT-FOUND",
+                csrfToken: req.csrfToken()
             });
         }
 
@@ -357,7 +381,8 @@ router.post('/users/:id', async (req, res) => {
         if (!isPasswordMatch) {
             return res.status(400).json({
                 message: "Password doesn't match the stored password.",
-                error: "PASSWORD-MISMATCH"
+                error: "PASSWORD-MISMATCH",
+                csrfToken: req.csrfToken()
             });
         }
 
@@ -394,7 +419,8 @@ router.post('/users/:id', async (req, res) => {
                     console.error(`Error executing SQL: ${err.message}`);
                     return res.status(500).json({
                         message: 'Internal Server Error',
-                        error: err.message
+                        error: err.message,
+                        csrfToken: req.csrfToken()
                     });
                 } catch (error) {
                     console.error('Error sending message to Discord:', error.message);
@@ -418,11 +444,15 @@ router.post('/users/:id', async (req, res) => {
                     updatedUser: {
                         id: parsedId,
                         username: body.username
-                    }
+                    },
+                    csrfToken: req.csrfToken()
                 });
             } catch (error) {
                 console.error('Error sending message to Discord:', error.message);
-                return res.status(500).json({ error: 'Internal Server Error' });
+                return res.status(500).json({
+                    error: 'Internal Server Error',
+                    csrfToken: req.csrfToken()
+                });
             }
         }).run();
     } catch (err) {
@@ -440,11 +470,15 @@ router.post('/users/:id', async (req, res) => {
             console.error(err.message);
             return res.status(500).json({
                 message: 'Internal Server Error',
-                error: err.message
+                error: err.message,
+                csrfToken: req.csrfToken()
             });
         } catch (error) {
             console.error('Error sending message to Discord:', error.message);
-            return res.status(500).json({ error: 'Internal Server Error' });
+            return res.status(500).json({
+                error: 'Internal Server Error',
+                csrfToken: req.csrfToken()
+            });
         }
     }
 });

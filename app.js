@@ -15,8 +15,7 @@ const users = require('./routes/users.js');
 const services = require('./routes/services.js');
 const usertoid = require('./routes/services/user-to-id.js');
 
-// CSRF Protection Setup
-const csrfProtection = csrf({ cookie: true });
+const csrfProtection = csrf({ cookie: { httpOnly: true, secure: process.env.NODE_ENV === 'production' } });
 
 app.use(helmet());
 app.use(cors());
@@ -44,8 +43,8 @@ app.get('/services/user-to-id', usertoid);
 app.get('/users/:id', users);
 app.get('/services/user-to-id/:username', usertoid);
 
-app.post('/users', csrfProtection, users);
-app.post('/users/:id', csrfProtection, users);
+app.post('/users', users);
+app.post('/users/:id', users);
 
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);

@@ -6,6 +6,7 @@ router.get('/', function(req, res) {
     return res.status(400).json({
         message: "Nothing exists here so get out before everything collapses!",
         error: "NOTHING-EXISTS-HERE",
+        csrfToken: req.csrfToken()
     });
 });
 

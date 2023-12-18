@@ -12,7 +12,8 @@ router.get('/services/user-to-id', function(req, res) {
         services: [
             "services/user-to-id:username"
         ],
-        error: "NOTHING-EXISTS-HERE"
+        error: "NOTHING-EXISTS-HERE",
+        csrfToken: req.csrfToken()
     });
 });
 
@@ -22,7 +23,8 @@ router.get('/services/user-to-id/:username', function(req, res) {
     if (!username) {
         return res.status(400).json({
             message: "You must provide a username.",
-            error: "NO-USERNAME-PROVIDED"
+            error: "NO-USERNAME-PROVIDED",
+            csrfToken: req.csrfToken()
         });
     }
 
@@ -33,20 +35,23 @@ router.get('/services/user-to-id/:username', function(req, res) {
             console.error(err.message);
             return res.status(500).json({
                 message: 'Internal Server Error',
-                error: err.message
+                error: err.message,
+                csrfToken: req.csrfToken()
             });
         }
 
         if (!user) {
             return res.status(400).json({
                 message: 'User not found.',
-                error: 'USER-NOT-FOUND'
+                error: 'USER-NOT-FOUND',
+                csrfToken: req.csrfToken()
             });
         }
 
         res.status(200).json({
             message: 'User ID found.',
-            userId: user.id
+            userId: user.id,
+            csrfToken: req.csrfToken()
         });
     });
 });
