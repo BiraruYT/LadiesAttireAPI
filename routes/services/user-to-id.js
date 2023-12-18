@@ -19,7 +19,8 @@ router.get('/services/user-to-id/:username', function(req, res) {
 
     const query = 'SELECT id FROM users WHERE username = ?';
 
-    db.prepare(query, (err, user) => {
+    db.prepare(query)
+        .run((err, user) => {
         if (err) {
             console.error(err.message);
             return res.status(500).json({
