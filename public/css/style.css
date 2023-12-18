@@ -1,0 +1,9 @@
+body {
+    color: #000000;
+}
+
+.div-main h1 p {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: #fff;
+}
