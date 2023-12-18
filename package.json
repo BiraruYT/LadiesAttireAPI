@@ -13,22 +13,22 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon app.js",
-    "build": "node app.js"
+    "build": "node app.js",
+    "check-unused": "depcheck",
+    "remove-unused": "npm prune"
   },
   "dependencies": {
     "argon2": "^0.31.2",
-    "bcrypt": "^5.1.1",
     "better-sqlite3": "^9.2.2",
     "body-parser": "^1.20.2",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "csurf": "^1.11.0",
-    "discord-webhook-node": "^1.1.8",
     "dompurify": "^3.0.6",
     "express": "^4.18.2",
     "express-ip": "^1.0.4",
-    "express-rate-limit": "^7.1.5",
-    "helmet": "^7.1.0"
+    "helmet": "^7.1.0",
+    "jsdom": "^23.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
