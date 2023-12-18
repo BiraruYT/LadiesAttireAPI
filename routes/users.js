@@ -97,9 +97,21 @@ router.post('/users', async (req, res) => {
         });
     }
 
+    let argon2HashedPassword
+
+    try {
+        argon2HashedPassword = await argon2.hash(DOMPurify.sanitize(body.password))
+    }
+    catch (err) {
+        return res.status(500).json({
+            message: 'Internal Server Error',
+            csrfToken: req.csrfToken()
+        });
+    }
+
     const newUser = {
         username: DOMPurify.sanitize(body.username),
-        password: await argon2.hash(DOMPurify.sanitize(body.password)),
+        password: argon2HashedPassword,
         email: DOMPurify.sanitize(body.email),
     };
 
@@ -131,7 +143,6 @@ router.post('/users', async (req, res) => {
         console.error(`Error executing SQL: ${error.message}`);
         return res.status(500).json({
             message: 'Internal Server Error',
-            error: error.message,
             csrfToken: req.csrfToken()
         });
     }
@@ -178,7 +189,16 @@ router.get('/users/:id', async (req, res) => {
         });
     }
 
-    const hashedPassword = await argon2.hash(body.password);
+    let hashedPassword
+    try {
+        hashedPassword = await argon2.hash(body.password);
+    }
+    catch (err) {
+        return res.status(500).json({
+            message: 'Internal Server Error',
+            csrfToken: req.csrfToken()
+        });
+    }
 
     if (hashedPassword === user.password) {
         return res.status(200).json({
@@ -251,7 +271,16 @@ router.post('/users/:id', async (req, res) => {
             });
         }
 
-        const isPasswordMatch = await argon2.verify(user.password, body.password);
+        let isPasswordMatch
+        try {
+            isPasswordMatch = await argon2.verify(user.password, body.password);
+        }
+        catch (err) {
+            return res.status(500).json({
+                message: 'Internal Server Error',
+                csrfToken: req.csrfToken()
+            });
+        }
 
         if (!isPasswordMatch) {
             return res.status(400).json({
@@ -269,7 +298,16 @@ router.post('/users/:id', async (req, res) => {
             values.push(DOMPurify.sanitize(body.username));
         }
         if (body.password) {
-            const hashedPassword = await argon2.hash(DOMPurify.sanitize(body.password));
+            let hashedPassword
+            try {
+                hashedPassword = await argon2.hash(DOMPurify.sanitize(body.password));
+            }
+            catch (err) {
+                return res.status(500).json({
+                    message: 'Internal Server Error',
+                    csrfToken: req.csrfToken()
+                });
+            }
             updateFields.push('password = ?');
             values.push(hashedPassword);
         }
