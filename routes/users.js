@@ -115,13 +115,13 @@ router.post('/users', async (req, res) => {
             });
         }
 
-        const { lastInsertRowid } = db.prepare('INSERT INTO users (username, password, email) VALUES (?, ?, ?)').run(newUser.username, newUser.password, newUser.email);
+        const { lastInsertRowId } = db.prepare('INSERT INTO users (username, password, email) VALUES (?, ?, ?)').run(newUser.username, newUser.password, newUser.email);
 
-        console.log(`A new user has been added with ID ${lastInsertRowid}`);
+        console.log(`A new user has been added with ID ${lastInsertRowId}`);
         return res.status(200).json({
             message: 'User successfully added.',
             newUser: {
-                id: lastInsertRowid,
+                id: lastInsertRowId,
                 username: newUser.username,
                 email: newUser.email
             },
