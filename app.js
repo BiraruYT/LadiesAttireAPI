@@ -1,4 +1,5 @@
 const express = require('express');
+const { rateLimit } = require('express-rate-limit');
 const helmet = require('helmet');
 const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
@@ -14,6 +15,11 @@ const users = require('./routes/users.js');
 const usertoid = require('./routes/services/user-to-id.js');
 
 const csrfProtection = csrf({ cookie: true });
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.'
+});
 const scriptContent = `if ('serviceWorker' in navigator) {
           navigator.serviceWorker.register('/service-worker.js')
               .then(registration => console.log('Service Worker registered with scope:', registration.scope))
@@ -21,6 +27,8 @@ const scriptContent = `if ('serviceWorker' in navigator) {
       }`;
 const hash = crypto.createHash('sha256').update(scriptContent).digest('base64');
 
+// noinspection JSCheckFunctionSignatures
+app.use(limiter);
 app.use(helmet());
 app.use(cors());
 app.use(cookieParser(keys.keys.cookieparser));
@@ -40,11 +48,15 @@ app.use(
     })
 );
 app.use((req, res, next) => {
+    // noinspection JSUnresolvedReference
     res.locals.csrfToken = req.csrfToken();
     next();
 });
+// noinspection JSCheckFunctionSignatures
 app.use((err, req, res, next) => {
+    // noinspection JSUnresolvedReference
     if (err.code === 'EBADCSRFTOKEN') {
+        // noinspection JSUnresolvedReference
         res.status(403).json({
             error: 'CSRF token validation failure'
         });
