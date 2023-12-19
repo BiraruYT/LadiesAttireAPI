@@ -130,11 +130,11 @@ router.post('/users', async (req, res) => {
         const stmt = db.prepare('INSERT INTO users (username, password, email) VALUES (?, ?, ?)');
         const result = stmt.run(newUser.username, newUser.password, newUser.email);
 
-        console.log(`A new user has been added with ID ${result.lastInsertRowId}`);
+        console.log(`A new user has been added with ID ${result.id}`);
         return res.status(200).json({
             message: 'User successfully added.',
             newUser: {
-                id: result.lastInsertRowId,
+                id: result.id,
                 username: newUser.username,
                 email: newUser.email
             },
@@ -253,10 +253,18 @@ router.post('/users/:id', async (req, res) => {
         });
     }
 
-    if (!body.update.username && !body.update.password && !body.update.email) {
-        return res.status(400).json({
-            message: "No fields provided for update. Please specify at least one field (username, password, email).",
-            error: "NO-FIELDS-FOR-UPDATE",
+    try {
+        if (!body.update.username && !body.update.password && !body.update.email) {
+            return res.status(400).json({
+                message: "No fields provided for update. Please specify at least one field (username, password, email).",
+                error: "NO-FIELDS-FOR-UPDATE",
+                csrfToken: req.csrfToken()
+            });
+        }
+    }
+    catch (err) {
+        return res.status(500).json({
+            message: 'Internal Server Error',
             csrfToken: req.csrfToken()
         });
     }
@@ -328,7 +336,6 @@ router.post('/users/:id', async (req, res) => {
                     });
                 }
 
-                // Fetch the updated user from the database
                 const updatedUser = db.prepare('SELECT id, username, email FROM users WHERE id = ?').get(parsedId);
 
                 console.log(`User with ID ${parsedId} has been updated.`);
