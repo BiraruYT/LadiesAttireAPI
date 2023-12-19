@@ -1,6 +1,7 @@
 const express = require('express');
 const { rateLimit } = require('express-rate-limit');
 const helmet = require('helmet');
+const session = require('express-session');
 const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
@@ -12,7 +13,8 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 const users = require('./routes/users.js');
-const usertoid = require('./routes/services/user-to-id.js');
+const newarrivals = require('./routes/newarrivals.js');
+const usertoid = require('./routes/user-to-id.js');
 
 const csrfProtection = csrf({ cookie: true });
 const limiter = rateLimit({
@@ -30,6 +32,11 @@ const hash = crypto.createHash('sha256').update(scriptContent).digest('base64');
 // noinspection JSCheckFunctionSignatures
 app.use(limiter);
 app.use(helmet());
+app.use(session({
+    secret: keys.keys.session,
+    resave: false,
+    saveUninitialized: true
+}));
 app.use(cors());
 app.use(cookieParser(keys.keys.cookieparser));
 app.use(express.static('public'));
@@ -75,11 +82,13 @@ app.use((req, res, next) => {
     next();
 });
 
-app.get('/users/:id', users);
-app.get('/services/user-to-id/:username', usertoid);
+app.get('/newarrivals', newarrivals);
+app.get('/user-to-id/:username', usertoid);
+app.get('/users/:id/info', users);
 
-app.post('/users', users);
-app.post('/users/:id', users);
+app.post('/newarrivals', newarrivals);
+app.post('/users/register', users);
+app.post('/users/:id/edit', users);
 
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
