@@ -1,8 +1,8 @@
 js/keys.js
-old
+old/
 old/old.js
 old/users-old.js
-sqlitedb
+sqlitedb/
 sqlitedb/backup-prod-users.db
 sqlitedb/dev-users.db
 sqlitedb/prod-users.db
