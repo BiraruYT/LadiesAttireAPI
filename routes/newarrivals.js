@@ -56,11 +56,19 @@ db.prepare(`
 `).run();
 
 function deleteFile(path, res) {
-    fs.unlink(path, (err) => {
-        if (err) {
-            handleError(err, res)
-        }
-    });
+    let normalizedPath = path.normalize(path);
+    let absolutePath = path.resolve(normalizedPath);
+
+    if (absolutePath.startsWith(`${path.resolve('./uploads/images/newarrivals/temp/')}`)) {
+        fs.unlink(path.extname(absolutePath), (err) => {
+            if (err) {
+                handleError(err, res)
+            }
+        });
+    }
+    else {
+        console.log('File is not in the temp folder.');
+    }
 }
 
 function handleError(err, res) {
@@ -192,7 +200,7 @@ router.post('/newarrivals', uploadicon.single('icon'), function(req, res) {
             });
         }
 
-        const imgBase64 = fs.readFileSync(icon.path).toString('base64');
+        const imgBase64 = fs.readFileSync(path.extname(icon.path)).toString('base64');
         const ext = path.extname(icon.originalname);
 
         deleteFile(icon.path, res);
