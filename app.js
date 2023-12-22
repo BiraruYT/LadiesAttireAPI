@@ -43,7 +43,7 @@ app.use(session({
 app.use(cors());
 app.use(cookieParser(keys.keys.cookieparser));
 app.use(express.static('public'));
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '1mb'}));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(csrfProtection);
 
