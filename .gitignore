@@ -4,3 +4,5 @@ sqlitedb
 sqlitedb/backup-prod-users.db
 sqlitedb/dev-users.db
 sqlitedb/prod-users.db
+sqlitedb/dev-products.db
+sqlitedb/prod-products.db
