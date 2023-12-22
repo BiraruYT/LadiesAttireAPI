@@ -12,7 +12,7 @@ const keys = require("./js/keys");
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-const users = require('./routes/users.js');
+const users = require('./old/users-old.js');
 const newarrivals = require('./routes/newarrivals.js');
 const usertoid = require('./routes/user-to-id.js');
 
@@ -23,11 +23,14 @@ const limiter = rateLimit({
     message: 'Too many requests from this IP, please try again later.'
 });
 const scriptContent = `if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.register('/service-worker.js')
+          navigator.serviceWorker.register('./public/service-worker.js')
               .then(registration => console.log('Service Worker registered with scope:', registration.scope))
               .catch(error => console.error('Service Worker registration failed:', error));
       }`;
 const hash = crypto.createHash('sha256').update(scriptContent).digest('base64');
+
+export const usersDB = './sqlitedb/dev-users.db';
+export const productsDB = './sqlitedb/dev-products.db';
 
 // noinspection JSCheckFunctionSignatures
 app.use(limiter);
@@ -89,6 +92,8 @@ app.get('/users/:id/info', users);
 app.post('/newarrivals', newarrivals);
 app.post('/users/register', users);
 app.post('/users/:id/edit', users);
+
+app.delete('/newarrivals', newarrivals);
 
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
