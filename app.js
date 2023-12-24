@@ -12,7 +12,7 @@ const keys = require("./js/keys");
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-const users = require('./old/users-old.js');
+const users = require('./routes/users.js');
 const newarrivals = require('./routes/newarrivals.js');
 const usertoid = require('./routes/user-to-id.js');
 
@@ -29,8 +29,8 @@ const scriptContent = `if ('serviceWorker' in navigator) {
       }`;
 const hash = crypto.createHash('sha256').update(scriptContent).digest('base64');
 
-export const usersDB = './sqlitedb/dev-users.db';
-export const productsDB = './sqlitedb/dev-products.db';
+const usersDB = './sqlitedb/dev-users.db';
+const productsDB = './sqlitedb/dev-products.db';
 
 // noinspection JSCheckFunctionSignatures
 app.use(limiter);
@@ -87,13 +87,15 @@ app.use((req, res, next) => {
 
 app.get('/newarrivals', newarrivals);
 app.get('/user-to-id/:username', usertoid);
-app.get('/users/:id/info', users);
+app.get('/users/:id', users);
 
 app.post('/newarrivals', newarrivals);
 app.post('/users/register', users);
-app.post('/users/:id/edit', users);
+
+app.patch('/users/:id', users);
 
 app.delete('/newarrivals', newarrivals);
+app.delete('/users/:id', users);
 
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
