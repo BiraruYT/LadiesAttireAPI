@@ -1,5 +1,5 @@
 function isInt(value) {
-    return !Number.isNaN(parseFloat(value));
+    return !Number.isNaN(parseInt(value));
 }
 
 module.exports = {
