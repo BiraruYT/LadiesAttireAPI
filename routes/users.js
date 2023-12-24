@@ -2,13 +2,13 @@
 const express = require('express');
 const SQLITE3 = require("better-sqlite3");
 const multer = require("multer");
-const createDOMPurify = require('dompurify');
 const NodeClam = require('clamscan');
 const { JSDOM } = require('jsdom');
 const argon2 = require("argon2");
 const crypto = require('crypto');
 
 // DOMPurify
+const createDOMPurify = require('dompurify');
 const window = new JSDOM('').window;
 const DOMPurify = createDOMPurify(window);
 
@@ -406,11 +406,6 @@ router.patch('/users/:id', async (req, res) => {
     const newpassword = DOMPurify.sanitize(body.newpassword);
     const email = DOMPurify.sanitize(body.email);
     const icon = req.file;
-
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    const alphabetRegex = /^[a-zA-Z0-9]+$/;
-    const usernameRegex = /^[a-zA-Z0-9_]{3,16}$/;
-    const spaceRegex = /\s/;
 
     if (firstname || lastname || username || newpassword || email || icon) {
         if (!originalpassword) {

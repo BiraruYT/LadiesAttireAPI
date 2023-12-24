@@ -1,6 +1,12 @@
 const express = require('express');
 const SQLITE3 = require('better-sqlite3');
 const { usersDB } = require("../app");
+const { JSDOM } = require('jsdom');
+
+// DOMPurify
+const createDOMPurify = require("dompurify");
+const window = new JSDOM('').window;
+const DOMPurify = createDOMPurify(window);
 
 const router = express.Router();
 
@@ -18,7 +24,7 @@ router.get('/user-to-id/:username', function(req, res) {
     }
 
     const stmt = db.prepare('SELECT id FROM users WHERE username = ?');
-    const user = stmt.get(username);
+    const user = stmt.get(DOMPurify.sanitize(username));
 
     if (user) {
         res.status(200).json({
